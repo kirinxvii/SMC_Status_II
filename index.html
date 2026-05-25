@@ -8,18 +8,17 @@
         body { margin: 0; padding: 0; }
         #leaflet-map { height: 100vh; width: 100%; }
         
-        /* Google Maps 風格定位針樣式 */
+        /* 地標符號：加大尺寸 */
         .marker-icon { 
             background-color: #ffc107; 
             clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
             box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
         
-        /* 名稱標籤樣式 */
+        /* WTG/OSS 文字標籤：縮小字體 */
         .text-label { 
-            font-size: 12px; font-weight: bold; color: #000; text-align: center; 
-            background: rgba(255, 255, 255, 0.8); border-radius: 3px; padding: 1px 4px; 
-            white-space: nowrap; border: 1px solid #999;
+            font-size: 9px; font-weight: bold; color: #333; text-align: center; 
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -49,7 +48,6 @@
         Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
             download: true, header: true,
             complete: function(results) {
-                // 1. 繪製連線
                 results.data.forEach(row => {
                     if (!row.Key) return;
                     const pair = row.Key.split('-');
@@ -57,12 +55,11 @@
                     L.polyline([points[pair[0]], points[pair[1]]], { color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' }).addTo(map);
                 });
 
-                // 2. 繪製定位針與名稱標籤
                 Object.keys(points).forEach(name => {
-                    // 定位針
-                    L.marker(points[name], { icon: L.divIcon({ className: 'marker-icon', iconSize: [24, 30], iconAnchor: [12, 30] }) }).addTo(map);
-                    // 名稱標籤
-                    L.marker(points[name], { icon: L.divIcon({ className: 'text-label', html: `<b>${name}</b>`, iconSize: [40, 20], iconAnchor: [20, -10] }) }).addTo(map);
+                    // 地標加大：iconSize [30, 36], iconAnchor [15, 36]
+                    L.marker(points[name], { icon: L.divIcon({ className: 'marker-icon', iconSize: [30, 36], iconAnchor: [15, 36] }) }).addTo(map);
+                    // 字體縮小：font-size: 9px
+                    L.marker(points[name], { icon: L.divIcon({ className: 'text-label', html: `<b>${name}</b>`, iconSize: [40, 20], iconAnchor: [20, -12] }) }).addTo(map);
                 });
 
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
