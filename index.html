@@ -7,10 +7,9 @@
     <style>
         body { margin: 0; padding: 0; }
         #leaflet-map { height: 100vh; width: 100%; }
-        /* Marker 樣式 */
-        .marker-icon { border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); pointer-events: none; }
-        .solid-circle { background-color: #28a745; } /* 綠色 */
-        .yellow-circle { background-color: #ffc107; } /* 黃色 */
+        .marker-icon { border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); pointer-events: none; background: transparent; }
+        .solid-circle { background-color: #28a745 !important; border: 2px solid white !important; }
+        .yellow-circle { background-color: #ffc107 !important; border: 2px solid white !important; }
     </style>
 </head>
 <body>
@@ -23,7 +22,7 @@
         const map = L.map('leaflet-map');
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-        // [請在此處填入你的完整座標點位]
+        // 座標點位資料
         const points = {
             "OSS": [24.0868, 120.2074], "WTG01": [24.1200, 120.1885], "WTG02": [24.0999, 120.1728], "WTG03": [24.0797, 120.1572],
             "WTG04": [24.1188, 120.1963], "WTG05": [24.0990, 120.1811], "WTG06": [24.0793, 120.1659], "WTG07": [24.0596, 120.1507],
@@ -41,8 +40,7 @@
             return [p1[0] + (p2[0] - p1[0]) * ratio, p1[1] + (p2[1] - p1[1]) * ratio];
         }
 
-        // 讀取 CSV 並繪圖
-        Papa.parse(CSV_URL, {
+        Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
             download: true, header: true,
             complete: function(results) {
                 results.data.forEach(row => {
@@ -55,22 +53,31 @@
                     } else {
                         L.polyline([points[pair[0]], points[pair[1]]], { color: 'black', weight: 2, dashArray: '5, 10' }).addTo(map);
                         
-                        // 處理 Final 欄位 (根據你的 CSV 標題)
                         const markers = [row.Final_Start, row.Final_End];
                         markers.forEach((cls, index) => {
                             if (cls && cls.trim() !== "") {
                                 L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
-                                    icon: L.divIcon({ className: `marker-icon ${cls}`, iconSize: [20, 20] }),
+                                    icon: L.divIcon({ className: `marker-icon ${cls.trim()}`, iconSize: [20, 20] }),
                                     interactive: false
                                 }).addTo(map);
                             }
                         });
                     }
                 });
-                // 自動對焦地圖範圍
-                map.fitBounds(L.latLngBounds(Object.values(points)));
+
+                // 【修正重點】重新加入名稱標記
+                Object.keys(points).forEach(name => {
+                    L.marker(points[name], {
+                        icon: L.divIcon({ className: 'text-label', html: name, iconSize: [40, 20] })
+                    }).addTo(map);
+                });
+
+                map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
         });
     </script>
+    <style>
+        .text-label { font-size: 10px; font-weight: bold; color: #333; text-align: center; }
+    </style>
 </body>
 </html>
