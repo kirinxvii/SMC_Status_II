@@ -83,14 +83,18 @@
                         
                         if (cls) {
                             L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
-                                icon: L.divIcon({ className: `marker-icon ${cls}`, iconSize: [15, 15] }),
+                                icon: L.divIcon({ className: `marker-icon ${cls}`, iconSize: [10, 10] }),
                                 interactive: false
                             }).addTo(map);
                         }
                     });
                 });
                 
-                Object.keys(points).forEach(name => L.marker(points[name]).bindTooltip(name).addTo(map));
+                Object.keys(points).forEach(name => {
+                    L.marker(points[name], { 
+                        icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] }) // 縮小至 15x18
+                    }).bindTooltip(name).addTo(map);
+                });
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
         });
