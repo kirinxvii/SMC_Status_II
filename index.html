@@ -87,7 +87,7 @@
                 
                 Object.keys(points).forEach(name => {
                     L.marker(points[name], { 
-                        icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] }) // 縮小至 15x18
+                        icon: L.divIcon({ className: 'marker-pin', iconSize: [10, 15], iconAnchor: [5, 15] }) // 縮小至 15x18
                     }).bindTooltip(name).addTo(map);
                 });
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
