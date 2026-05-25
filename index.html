@@ -8,17 +8,11 @@
         body { margin: 0; padding: 0; }
         #leaflet-map { height: 100vh; width: 100%; }
         
-        /* 地標符號：加大尺寸 */
+        /* 藍色定位針樣式 */
         .marker-icon { 
-            background-color: #ffc107; 
+            background-color: #007bff; /* 改為藍色 */
             clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
             box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-        
-        /* WTG/OSS 文字標籤：縮小字體 */
-        .text-label { 
-            font-size: 9px; font-weight: bold; color: #333; text-align: center; 
-            white-space: nowrap;
         }
     </style>
 </head>
@@ -48,6 +42,7 @@
         Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
             download: true, header: true,
             complete: function(results) {
+                // 1. 繪製連線
                 results.data.forEach(row => {
                     if (!row.Key) return;
                     const pair = row.Key.split('-');
@@ -55,11 +50,17 @@
                     L.polyline([points[pair[0]], points[pair[1]]], { color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' }).addTo(map);
                 });
 
+                // 2. 繪製藍色定位針，並設定滑鼠滑過顯示名稱
                 Object.keys(points).forEach(name => {
-                    // 地標加大：iconSize [30, 36], iconAnchor [15, 36]
-                    L.marker(points[name], { icon: L.divIcon({ className: 'marker-icon', iconSize: [30, 36], iconAnchor: [15, 36] }) }).addTo(map);
-                    // 字體縮小：font-size: 9px
-                    L.marker(points[name], { icon: L.divIcon({ className: 'text-label', html: `<b>${name}</b>`, iconSize: [40, 20], iconAnchor: [20, -12] }) }).addTo(map);
+                    L.marker(points[name], { 
+                        icon: L.divIcon({ 
+                            className: 'marker-icon', 
+                            iconSize: [20, 25], 
+                            iconAnchor: [10, 25] // 尖端錨點設定為底部中央，更精準貼合座標
+                        }) 
+                    })
+                    .bindTooltip(name, { permanent: false, direction: 'top' }) // 滑鼠滑過顯示
+                    .addTo(map);
                 });
 
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
