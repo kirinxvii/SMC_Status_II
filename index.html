@@ -85,11 +85,7 @@
                     });
                 });
                 
-                Object.keys(points).forEach(name => {
-                    L.marker(points[name], { 
-                        icon: L.divIcon({ className: 'marker-pin', iconSize: [16, 20], iconAnchor: [8, 10] }) 
-                    }).bindTooltip(name).addTo(map);
-                });
+                Object.keys(points).forEach(name => L.marker(points[name]).bindTooltip(name).addTo(map));
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
         });
