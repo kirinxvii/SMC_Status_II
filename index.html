@@ -39,4 +39,52 @@
             "WTG28": [24.1113, 120.2431], "WTG29": [24.0942, 120.2306], "WTG30": [24.0771, 120.2181], "WTG31": [24.0600, 120.2055]
         };
 
-        const CSV_URL = '
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0MC7HzAbxdqTrZNqIpaBtcyCIr8gV3vVm2pan8j2QFIlrHP2qzzqDb15LE9EqlrxcxQGuc6vphXDJ/pub?output=csv';
+
+        function getOffsetPoint(p1, p2, ratio) {
+            return [p1[0] + (p2[0] - p1[0]) * ratio, p1[1] + (p2[1] - p1[1]) * ratio];
+        }
+
+        // 讀取 CSV 並執行繪製
+        Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
+            download: true, header: true,
+            complete: function(results) {
+                // 1. 繪製線條
+                results.data.forEach(row => {
+                    if (!row.Key) return;
+                    const pair = row.Key.split('-');
+                    if (!points[pair[0]] || !points[pair[1]]) return;
+
+                    if (row.Type === 'green') {
+                        L.polyline([points[pair[0]], points[pair[1]]], { color: 'green', weight: 3 }).addTo(map);
+                    } else {
+                        L.polyline([points[pair[0]], points[pair[1]]], { color: 'black', weight: 2, dashArray: '5, 10' }).addTo(map);
+                        
+                        // 處理圓圈標記
+                        [row.Final_Start, row.Final_End].forEach((cls, index) => {
+                            if (cls && cls.trim() !== "") {
+                                L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
+                                    icon: L.divIcon({ className: `marker-icon ${cls.trim()}`, iconSize: [20, 20] }),
+                                    interactive: false
+                                }).addTo(map);
+                            }
+                        });
+                    }
+                });
+
+                // 2. 繪製點位符號與名稱
+                Object.keys(points).forEach(name => {
+                    // 點位符號
+                    L.circleMarker(points[name], { radius: 5, fillColor: "#fff", color: "#000", weight: 1, fillOpacity: 0.8 }).addTo(map);
+                    // 名稱標籤
+                    L.marker(points[name], {
+                        icon: L.divIcon({ className: 'text-label', html: `<b>${name}</b>`, iconSize: [40, 20], iconAnchor: [20, -10] })
+                    }).addTo(map);
+                });
+
+                map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
+            }
+        });
+    </script>
+</body>
+</html>
