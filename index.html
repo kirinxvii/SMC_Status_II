@@ -2,27 +2,41 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>SMC_Status 即時地圖</title>
+    <title>SMC_Status 即時地圖 (整合 VesselFinder)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
-        #leaflet-map { height: 100vh; width: 100%; }
+        /* 建立父容器來疊加地圖 */
+        #map-wrapper { position: relative; width: 100%; height: 100vh; }
+        .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* 藍色定位針樣式 */
-        .marker-icon { 
-            background-color: #007bff; 
-            clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
-            box-shadow: 0 0 3px rgba(0,0,0,0.3);
-        }
-        
-        /* 狀態圈圈樣式 (已縮小) */
-        .status-circle { border-radius: 50%; border: 1.5px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.3); pointer-events: none; }
-        .solid-circle { background-color: #28a745 !important; } /* 綠色 */
-        .yellow-circle { background-color: #ffc107 !important; } /* 黃色 */
+        #leaflet-map { z-index: 1; } /* 底層：自訂線路圖 */
+        #vf-map-container { z-index: 2; pointer-events: none; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊，設定透明度 */
+
+        /* 原有樣式 */
+        .marker-icon { border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5); pointer-events: none; }
+        .solid-circle { background-color: #28a745 !important; }
+        .yellow-circle { background-color: #ffc107 !important; }
     </style>
 </head>
 <body>
-    <div id="leaflet-map"></div>
+    <div id="map-wrapper">
+        <div class="map-container" id="leaflet-map"></div>
+        
+        <div class="map-container" id="vf-map-container">
+            <script type="text/javascript">
+                var width="100%";
+                var height="100%";
+                var latitude="24.091";
+                var longitude="120.1907";
+                var zoom="12";
+                var names=true;
+                var fleet="bd11a206049a72aa14edad5b5815ee03";
+                var fleet_name="Pin Pile";
+            </script>
+            <script type="text/javascript" src="https://www.vesselfinder.com/aismap.js"></script>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -51,7 +65,6 @@
         Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
             download: true, header: true,
             complete: function(results) {
-                // 1. 繪製線條與狀態圈圈
                 results.data.forEach(row => {
                     if (!row.Key) return;
                     const pair = row.Key.split('-');
@@ -70,22 +83,14 @@
                         
                         if (cls) {
                             L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
-                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [15, 15] }), // 縮小至 15x15
+                                icon: L.divIcon({ className: `marker-icon ${cls}`, iconSize: [15, 15] }),
                                 interactive: false
                             }).addTo(map);
                         }
                     });
                 });
-
-                // 2. 繪製藍色定位針 (帶 hover 顯示編號)
-                Object.keys(points).forEach(name => {
-                    L.marker(points[name], { 
-                        icon: L.divIcon({ className: 'marker-icon', iconSize: [20, 25], iconAnchor: [10, 25] }) 
-                    })
-                    .bindTooltip(name, { permanent: false, direction: 'top' })
-                    .addTo(map);
-                });
-
+                
+                Object.keys(points).forEach(name => L.marker(points[name]).bindTooltip(name).addTo(map));
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
         });
