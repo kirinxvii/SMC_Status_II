@@ -6,80 +6,57 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
-        #map-wrapper { position: relative; width: 100%; height: 450 px; }
+        /* 建立父容器來疊加地圖 */
+        #map-wrapper { position: relative; width: 100%; height: 450px; }
         .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        #leaflet-map { z-index: 1; }
-        #vf-map-container { z-index: 1000; pointer-events: auto; opacity: 0.6; }
 
+        #leaflet-map { z-index: 1; } /* 底層：自訂線路圖 */
+        #vf-map-container { z-index: 2; pointer-events: auto; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊 */
+        #leaflet-map { z-index: 1; }
+        #vf-map-container { z-index: 1000; pointer-events: auto; opacity: 0.8; }
+
+        /* 藍色定位針樣式 (等比例縮小) */
+        .marker-pin { 
+            background-color: #007bff;
+            clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
+        }
         /* 定位針與文字標籤樣式 */
         .marker-pin { background-color: #007bff; clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'); }
         
         .text-label { font-size: 10px; font-weight: bold; color: #004a99; white-space: nowrap; pointer-events: none; }
-        
+
+        /* 狀態圈圈樣式 (已縮小) */
         .status-circle { border-radius: 50%; border: 1px solid white; box-shadow: 0 0 2px rgba(0,0,0,0.3); pointer-events: none; }
         .solid-circle { background-color: #28a745 !important; }
         .yellow-circle { background-color: #ffc107 !important; }
-    </style>
-</head>
-<body>
-    <div id="map-wrapper">
-        <div class="map-container" id="leaflet-map"></div>
-        <div class="map-container" id="vf-map-container">
-            <script type="text/javascript">
-                var width="100%"; var height="100%"; var latitude="24.095"; var longitude="120.198";
-                var zoom="12"; var names=true; var fleet="bd11a206049a72aa14edad5b5815ee03"; var fleet_name="Pin Pile";
-            </script>
-            <script type="text/javascript" src="https://www.vesselfinder.com/aismap.js"></script>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-    <script>
-        const map = L.map('leaflet-map');
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-
-        const points = {
-            "OSS": [24.0868, 120.2074], "WTG01": [24.1200, 120.1885], "WTG02": [24.0999, 120.1728], "WTG03": [24.0797, 120.1572],
-            "WTG04": [24.1188, 120.1963], "WTG05": [24.0990, 120.1811], "WTG06": [24.0793, 120.1659], "WTG07": [24.0596, 120.1507],
-            "WTG08": [24.1176, 120.2041], "WTG09": [24.0982, 120.1893], "WTG10": [24.0789, 120.1746], "WTG11": [24.0596, 120.1598],
-            "WTG12": [24.1163, 120.2119], "WTG13": [24.0974, 120.1976], "WTG14": [24.0786, 120.1833], "WTG15": [24.0597, 120.1690],
-            "WTG16": [24.1151, 120.2197], "WTG17": [24.0966, 120.2058], "WTG18": [24.0782, 120.1920], "WTG19": [24.0598, 120.1781],
-            "WTG20": [24.1138, 120.2275], "WTG21": [24.0960, 120.2140], "WTG22": [24.0778, 120.2007], "WTG23": [24.0598, 120.1872],
-            "WTG24": [24.1126, 120.2353], "WTG25": [24.0950, 120.2223], "WTG26": [24.0775, 120.2094], "WTG27": [24.0599, 120.1964],
-            "WTG28": [24.1113, 120.2431], "WTG29": [24.0942, 120.2306], "WTG30": [24.0771, 120.2181], "WTG31": [24.0600, 120.2055]
-        };
-
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR0MC7HzAbxdqTrZNqIpaBtcyCIr8gV3vVm2pan8j2QFIlrHP2qzzqDb15LE9EqlrxcxQGuc6vphXDJ/pub?output=csv';
-
-        function getOffsetPoint(p1, p2, ratio) {
-            return [p1[0] + (p2[0] - p1[0]) * ratio, p1[1] + (p2[1] - p1[1]) * ratio];
-        }
-
-        Papa.parse(CSV_URL + '&t=' + new Date().getTime(), {
-            download: true, header: true,
-            complete: function(results) {
-                results.data.forEach(row => {
-                    if (!row.Key) return;
+@@ -69,31 +66,28 @@
                     const pair = row.Key.split('-');
                     if (!points[pair[0]] || !points[pair[1]]) return;
 
+                    L.polyline([points[pair[0]], points[pair[1]]], { 
+                        color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' 
+                    }).addTo(map);
                     L.polyline([points[pair[0]], points[pair[1]]], { color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' }).addTo(map);
 
                     [row.Final_Start, row.Final_End].forEach((status, index) => {
                         let cls = "";
+                        if (status === 'green') cls = 'solid-circle';
+                        else if (status === 'yellow') cls = 'yellow-circle';
                         if (status === 'green') cls = 'solid-circle'; else if (status === 'yellow') cls = 'yellow-circle';
                         if (cls) {
                             L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
+                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }),
+                                interactive: false
                                 icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }), interactive: false
                             }).addTo(map);
                         }
                     });
                 });
-                
+
                 Object.keys(points).forEach(name => {
+                    L.marker(points[name], { 
+                        icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] })
+                    }).bindTooltip(name).addTo(map);
                     // 繪製定位針
                     L.marker(points[name], { icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] }) }).addTo(map);
                     // 直接繪製文字標籤 (iconAnchor 設為負值將文字推移至針上方)
