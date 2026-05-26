@@ -6,20 +6,17 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
-        /* 建立父容器來疊加地圖 */
-        #map-wrapper { position: relative; width: 100%; height: 450px; }
+        #map-wrapper { position: relative; width: 100%; height: 600px; }
         .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        #leaflet-map { z-index: 1; } /* 底層：自訂線路圖 */
-        #vf-map-container { z-index: 2; pointer-events: auto; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊 */
+        #leaflet-map { z-index: 1; }
+        #vf-map-container { z-index: 1000; pointer-events: auto; opacity: 0.8; }
 
-        /* 藍色定位針樣式 (等比例縮小) */
-        .marker-pin { 
-            background-color: #007bff;
-            clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
-        }
+        /* 定位針與文字標籤樣式 */
+        .marker-pin { background-color: #007bff; clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'); }
         
-        /* 狀態圈圈樣式 (已縮小) */
+        .text-label { font-size: 10px; font-weight: bold; color: #004a99; white-space: nowrap; pointer-events: none; }
+        
         .status-circle { border-radius: 50%; border: 1px solid white; box-shadow: 0 0 2px rgba(0,0,0,0.3); pointer-events: none; }
         .solid-circle { background-color: #28a745 !important; }
         .yellow-circle { background-color: #ffc107 !important; }
@@ -69,27 +66,24 @@
                     const pair = row.Key.split('-');
                     if (!points[pair[0]] || !points[pair[1]]) return;
 
-                    L.polyline([points[pair[0]], points[pair[1]]], { 
-                        color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' 
-                    }).addTo(map);
+                    L.polyline([points[pair[0]], points[pair[1]]], { color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' }).addTo(map);
 
                     [row.Final_Start, row.Final_End].forEach((status, index) => {
                         let cls = "";
-                        if (status === 'green') cls = 'solid-circle';
-                        else if (status === 'yellow') cls = 'yellow-circle';
+                        if (status === 'green') cls = 'solid-circle'; else if (status === 'yellow') cls = 'yellow-circle';
                         if (cls) {
                             L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
-                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }),
-                                interactive: false
+                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }), interactive: false
                             }).addTo(map);
                         }
                     });
                 });
                 
                 Object.keys(points).forEach(name => {
-                    L.marker(points[name], { 
-                        icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] })
-                    }).bindTooltip(name).addTo(map);
+                    // 繪製定位針
+                    L.marker(points[name], { icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] }) }).addTo(map);
+                    // 直接繪製文字標籤 (iconAnchor 設為負值將文字推移至針上方)
+                    L.marker(points[name], { icon: L.divIcon({ className: 'text-label', html: name, iconSize: [40, 20], iconAnchor: [20, -5] }) }).addTo(map);
                 });
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
