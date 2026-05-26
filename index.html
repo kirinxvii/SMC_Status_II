@@ -6,20 +6,30 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
-        /* 建立父容器來疊加地圖 */
         #map-wrapper { position: relative; width: 100%; height: 450px; }
         .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        #leaflet-map { z-index: 1; } /* 底層：自訂線路圖 */
-        #vf-map-container { z-index: 2; pointer-events: auto; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊 */
+        #leaflet-map { z-index: 1; }
+        #vf-map-container { z-index: 2; pointer-events: none; opacity: 0.6; }
 
-        /* 藍色定位針樣式 (等比例縮小) */
+        /* 定位針樣式 */
         .marker-pin { 
             background-color: #007bff;
             clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
         }
         
-        /* 狀態圈圈樣式 (已縮小) */
+        /* 直接顯示的編號標籤樣式 */
+        .text-label { 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #0056b3; 
+            background: rgba(255, 255, 255, 0.7); 
+            padding: 2px; 
+            border-radius: 3px;
+            white-space: nowrap;
+            pointer-events: none; 
+        }
+        
         .status-circle { border-radius: 50%; border: 1px solid white; box-shadow: 0 0 2px rgba(0,0,0,0.3); pointer-events: none; }
         .solid-circle { background-color: #28a745 !important; }
         .yellow-circle { background-color: #ffc107 !important; }
@@ -87,9 +97,20 @@
                 });
                 
                 Object.keys(points).forEach(name => {
+                    // 1. 繪製定位針
                     L.marker(points[name], { 
                         icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] })
-                    }).bindTooltip(name).addTo(map);
+                    }).addTo(map);
+
+                    // 2. 繪製文字標籤 (直接顯示)
+                    L.marker(points[name], {
+                        icon: L.divIcon({ 
+                            className: 'text-label', 
+                            html: name, 
+                            iconSize: [40, 20], 
+                            iconAnchor: [20, -5] // 將標籤放置在定位針上方
+                        })
+                    }).addTo(map);
                 });
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
             }
