@@ -11,7 +11,7 @@
         .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
         #leaflet-map { z-index: 1; } /* 底層：自訂線路圖 */
-        #vf-map-container { z-index: 2; pointer-events: none; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊 */
+        #vf-map-container { z-index: 2; pointer-events: auto; opacity: 0.6; } /* 上層：VesselFinder，穿透點擊 */
 
         /* 藍色定位針樣式 (等比例縮小) */
         .marker-pin { 
