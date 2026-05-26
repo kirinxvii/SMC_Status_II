@@ -6,28 +6,30 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
-        #map-wrapper { position: relative; width: 100%; height: 450px; }
+        #map-wrapper { position: relative; width: 100%; height: 600px; }
         .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
+        /* 層級設定：VesselFinder 在最上層並允許互動 */
         #leaflet-map { z-index: 1; }
-        #vf-map-container { z-index: 2; pointer-events: none; opacity: 0.6; }
+        #vf-map-container { z-index: 1000; pointer-events: auto; opacity: 0.8; }
 
-        /* 定位針樣式 */
+        /* 風機定位針 (縮小) */
         .marker-pin { 
             background-color: #007bff;
             clip-path: path('M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z');
         }
         
-        /* 直接顯示的編號標籤樣式 */
+        /* 風機編號標籤 (無底色、字體縮小) */
         .text-label { 
-            font-size: 8px;  
+            font-size: 9px; 
             font-weight: bold; 
-            color: #0056b3; 
+            color: #004a99; 
             white-space: nowrap; 
             pointer-events: none; 
-            text-shadow: 1px 1px 1px white;; 
+            text-shadow: 1px 1px 1px white; 
         }
         
+        /* 狀態圈圈 */
         .status-circle { border-radius: 50%; border: 1px solid white; box-shadow: 0 0 2px rgba(0,0,0,0.3); pointer-events: none; }
         .solid-circle { background-color: #28a745 !important; }
         .yellow-circle { background-color: #ffc107 !important; }
@@ -77,37 +79,28 @@
                     const pair = row.Key.split('-');
                     if (!points[pair[0]] || !points[pair[1]]) return;
 
-                    L.polyline([points[pair[0]], points[pair[1]]], { 
-                        color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' 
-                    }).addTo(map);
+                    L.polyline([points[pair[0]], points[pair[1]]], { color: (row.Type === 'green') ? 'green' : 'black', weight: 2, dashArray: (row.Type === 'green') ? null : '5, 10' }).addTo(map);
 
                     [row.Final_Start, row.Final_End].forEach((status, index) => {
                         let cls = "";
-                        if (status === 'green') cls = 'solid-circle';
-                        else if (status === 'yellow') cls = 'yellow-circle';
+                        if (status === 'green') cls = 'solid-circle'; else if (status === 'yellow') cls = 'yellow-circle';
                         if (cls) {
                             L.marker(getOffsetPoint(points[pair[0]], points[pair[1]], [0.2, 0.8][index]), {
-                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }),
-                                interactive: false
+                                icon: L.divIcon({ className: `status-circle ${cls}`, iconSize: [10, 10] }), interactive: false
                             }).addTo(map);
                         }
                     });
                 });
                 
                 Object.keys(points).forEach(name => {
-                    // 1. 繪製定位針
-                    L.marker(points[name], { 
-                        icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] })
-                    }).addTo(map);
+                    let displayName = name.replace(/\D/g, ''); 
+                    if (name === "OSS") displayName = "OSS";
 
-                    // 2. 繪製文字標籤 (直接顯示)
+                    // 1. 繪製定位針
+                    L.marker(points[name], { icon: L.divIcon({ className: 'marker-pin', iconSize: [15, 18], iconAnchor: [7.5, 18] }) }).addTo(map);
+                    // 2. 繪製僅包含數字的標籤
                     L.marker(points[name], {
-                        icon: L.divIcon({ 
-                            className: 'text-label', 
-                            html: name, 
-                            iconSize: [40, 20], 
-                            iconAnchor: [20, -5] // 將標籤放置在定位針上方
-                        })
+                        icon: L.divIcon({ className: 'text-label', html: displayName, iconSize: [40, 20], iconAnchor: [20, -5] })
                     }).addTo(map);
                 });
                 map.fitBounds(L.latLngBounds(Object.values(points)), { padding: [50, 50] });
